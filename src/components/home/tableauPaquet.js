@@ -3,6 +3,7 @@ import { fetchAllCorpus } from '../../API/paquet/corpus.js';
 import { fetchAllStatus } from '../../API/paquet/status.js';
 import { afficherCardPaquetModal } from './cardPaquet.js';
 import { afficherCardPaquetAddModal } from '../editPaquet/addPaquet.js';
+import { ouvrirModalImportPaquetsCsv } from '../editPaquet/importPaquetsCsvModal.js';
 import { createDateFilter } from './filterDate.js';
 import { formatStatusLabel, renderStatusBadge, initBootstrapTooltips } from '../status/badgeStatus.js';
 
@@ -556,6 +557,17 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             dataTablesFilter.style.display = 'flex';
             dataTablesFilter.style.justifyContent = 'center';
             dataTablesFilter.style.margin = '0 auto';
+            if (!document.getElementById('btn-importer-paquets')) {
+                const btnImport = document.createElement('button');
+                btnImport.id = 'btn-importer-paquets';
+                btnImport.className = 'btn btn-outline-primary ms-2';
+                btnImport.innerHTML = '<i class="bi bi-upload"></i> Importer';
+                btnImport.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    ouvrirModalImportPaquetsCsv();
+                });
+                filterCol.appendChild(btnImport);
+            }
             if (!document.getElementById('btn-ajouter-paquet')) {
                 const btn = document.createElement('button');
                 btn.id = 'btn-ajouter-paquet';

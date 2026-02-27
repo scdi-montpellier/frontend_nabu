@@ -1,14 +1,7 @@
 
 import { register } from '../../../API/auth/auth.js';
 
-/**
- * Affiche une carte pour créer un nouveau profil utilisateur
- * @param {string} containerSelector - Sélecteur du conteneur où afficher la carte
- */
-
-// Affiche une modale de création de profil utilisateur, style displayProfilUser.js
 export function afficherModalAjoutProfil() {
-	// Supprimer une ancienne modale si présente
 	const existingModal = document.getElementById('ajoutProfilModal');
 	if (existingModal) existingModal.remove();
 

@@ -1,5 +1,6 @@
 import { fetchAllCorpus } from '../../API/paquet/corpus.js';
 import { showEditCorpusModal } from './editCorpusModal.js';
+import { showCreateCorpusModal } from './createCorpusModal.js';
 
 let selectedCorpus = null;
 
@@ -72,10 +73,24 @@ function installCorpusEditCaptureHandler() {
 
 export function selectCorpus(onSelect, defaultValue, options = {}) {
 	const container = document.createElement('div');
+	container.className = 'd-flex align-items-center gap-2';
 	const select = document.createElement('select');
 	select.className = 'select-small corpus-select';
 	const instanceId = options?.id || `corpus-select-${++corpusSelectInstanceCounter}`;
 	select.id = instanceId;
+	select.style.flex = '1 1 auto';
+
+	const addButton = document.createElement('button');
+	addButton.type = 'button';
+	addButton.className = 'btn btn-primary btn-sm flex-shrink-0 d-inline-flex align-items-center justify-content-center';
+	addButton.innerHTML = `
+		<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+			<path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>
+		</svg>
+		<span class="visually-hidden">Ajouter un corpus</span>
+	`;
+	addButton.setAttribute('aria-label', 'Ajouter un corpus');
+	addButton.title = 'Ajouter un corpus';
 
 	const hasSelect2 = () => !!(window.$ && window.$.fn && window.$.fn.select2);
 	const tryDestroySelect2 = () => {
@@ -89,7 +104,69 @@ export function selectCorpus(onSelect, defaultValue, options = {}) {
 		}
 	};
 
-	fetchAllCorpus().then(corpusList => {
+	const ensureInstanceStyle = () => {
+		const existing = container.querySelector(`style[data-corpus-select-style="${instanceId}"]`);
+		if (existing) return;
+		const style = document.createElement('style');
+		style.setAttribute('data-corpus-select-style', instanceId);
+		style.innerHTML = `
+			#${instanceId} + .select2 {
+				flex: 1 1 auto;
+				min-width: 0;
+			}
+			#${instanceId} + .select2 .select2-selection__rendered {
+				text-align: center !important;
+				width: 100%;
+				font-weight: bold;
+			}
+			.select2-results__option[role="option"][id^="select2-${instanceId}-result"][id$="-ALL"] {
+				text-align: center !important;
+			}
+		`;
+		container.appendChild(style);
+	};
+
+	const setSelectionValue = (value) => {
+		if (value === undefined || value === null || value === '') return;
+		select.value = String(value);
+		if (hasSelect2()) {
+			try {
+				window.$(select).val(String(value)).trigger('change');
+				return;
+			} catch (_) {
+			}
+		}
+		select.dispatchEvent(new Event('change'));
+	};
+
+	const initSelect2IfNeeded = (attempt = 0) => {
+		if (!hasSelect2()) return;
+		if (!container.isConnected) {
+			if (attempt >= 20) return;
+			setTimeout(() => initSelect2IfNeeded(attempt + 1), 0);
+			return;
+		}
+		tryDestroySelect2();
+		try {
+			window.$(select).select2({
+				width: 'resolve',
+				templateResult: formatCorpusOption,
+				templateSelection: formatCorpusSelection,
+				dropdownParent: window.$(container),
+				escapeMarkup: function (markup) { return markup; }
+			});
+			installCorpusEditCaptureHandler();
+			ensureInstanceStyle();
+		} catch (_) {
+		}
+	};
+
+	const reloadCorpusOptions = async (selectionToApply) => {
+		const currentValue = select.value;
+		tryDestroySelect2();
+		select.innerHTML = '';
+
+		const corpusList = await fetchAllCorpus();
 		if (corpusList && corpusList.success && Array.isArray(corpusList.data)) {
 			const allOption = document.createElement('option');
 			allOption.value = 'ALL';
@@ -123,41 +200,15 @@ export function selectCorpus(onSelect, defaultValue, options = {}) {
 			});
 
 			setTimeout(() => {
-				if (defaultValue) {
-					select.value = defaultValue;
-					if (hasSelect2()) {
-						window.$(select).val(defaultValue).trigger('change');
-					} else {
-						select.dispatchEvent(new Event('change'));
-					}
-				}
-				if (hasSelect2()) {
-					tryDestroySelect2();
-					window.$(select).select2({
-						width: 'resolve',
-						templateResult: formatCorpusOption,
-						templateSelection: formatCorpusSelection,
-						dropdownParent: window.$(container),
-						escapeMarkup: function (markup) { return markup; }
-					});
-					installCorpusEditCaptureHandler();
-
-					const style = document.createElement('style');
-					style.innerHTML = `
-						#${instanceId} + .select2 .select2-selection__rendered {
-							text-align: center !important;
-							width: 100%;
-							font-weight: bold;
-						}
-						.select2-results__option[role="option"][id^="select2-${instanceId}-result"][id$="-ALL"] {
-							text-align: center !important;
-						}
-					`;
-					container.appendChild(style);
-				}
+				initSelect2IfNeeded(0);
+				const valueToApply = selectionToApply ?? defaultValue ?? (currentValue || 'ALL');
+				setSelectionValue(valueToApply);
 			}, 0);
 		}
-	});
+	};
+
+	// Charge initialement la liste des corpus
+	reloadCorpusOptions(defaultValue);
 
 	const handleSelectionChange = () => {
 		const selectedOption = select.options[select.selectedIndex];
@@ -189,7 +240,14 @@ export function selectCorpus(onSelect, defaultValue, options = {}) {
 		}
 	}, 0);
 
+	addButton.addEventListener('click', () => {
+		showCreateCorpusModal((res) => {
+			reloadCorpusOptions();
+		});
+	});
+
 	container.appendChild(select);
+	container.appendChild(addButton);
 	return container;
 }
 
