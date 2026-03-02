@@ -22,6 +22,17 @@ function displayValue(value, fallback = '—') {
 	return v ? escapeHtml(v) : fallback;
 }
 
+function isFlagTruthy(value) {
+	if (value === true) return true;
+	if (value === false || value === 0 || value === null || value === undefined) return false;
+	if (typeof value === 'number') return value !== 0;
+	const v = String(value).trim().toLowerCase();
+	if (!v) return false;
+	const asNumber = Number(v);
+	if (!Number.isNaN(asNumber)) return asNumber !== 0;
+	return v === 'true' || v === 'oui' || v === 'yes';
+}
+
 async function getStatusById(statusId) {
 	if (statusId === null || statusId === undefined || statusId === '') return null;
 
@@ -198,15 +209,15 @@ export async function createCardPaquet(paquet) {
 							<div class="d-flex gap-4 flex-wrap">
 								<div class="text-center">
 									<div class="text-muted small">À faire</div>
-									<span class="badge bg-${paquet?.toDo ? 'success' : 'secondary'}">${paquet?.toDo ? 'Oui' : 'Non'}</span>
+									<span class="badge bg-${isFlagTruthy(paquet?.toDo) ? 'success' : 'secondary'}">${isFlagTruthy(paquet?.toDo) ? 'Oui' : 'Non'}</span>
 								</div>
 								<div class="text-center">
 									<div class="text-muted small">Multi-volume</div>
-									<span class="badge bg-${paquet?.facileTest ? 'success' : 'secondary'}">${paquet?.facileTest ? 'Oui' : 'Non'}</span>
+									<span class="badge bg-${isFlagTruthy(paquet?.facileTest) ? 'success' : 'secondary'}">${isFlagTruthy(paquet?.facileTest) ? 'Oui' : 'Non'}</span>
 								</div>
 								<div class="text-center">
 									<div class="text-muted small">SIP</div>
-									<span class="badge bg-${paquet?.filedSip ? 'success' : 'secondary'}">${paquet?.filedSip ? 'Oui' : 'Non'}</span>
+									<span class="badge bg-${isFlagTruthy(paquet?.filedSip) ? 'success' : 'secondary'}">${isFlagTruthy(paquet?.filedSip) ? 'Oui' : 'Non'}</span>
 								</div>
 							</div>
 							<div class="text-muted small text-end">
