@@ -4,6 +4,17 @@ import { createStatusSelector } from '../selecteur/selectStatus.js';
 import { editPaquet } from '../../API/paquet/paquet.js';
 import { openPaquetModal, applySipRule, refreshPaquetTables } from './paquetModalShared.js';
 
+function isFlagTruthy(value) {
+	if (value === true) return true;
+	if (value === false || value === 0 || value === null || value === undefined) return false;
+	if (typeof value === 'number') return value !== 0;
+	const v = String(value).trim().toLowerCase();
+	if (!v) return false;
+	const asNumber = Number(v);
+	if (!Number.isNaN(asNumber)) return asNumber !== 0;
+	return v === 'true' || v === 'oui' || v === 'yes';
+}
+
 export function afficherCardPaquetEditModal(paquet) {
 	openPaquetModal({
 		titleText: 'Modification',
@@ -15,9 +26,9 @@ export function afficherCardPaquetEditModal(paquet) {
 			imageColor: paquet?.imageColor ?? '',
 			searchArchiving: paquet?.searchArchiving ?? '',
 			comment: paquet?.commentaire ?? '',
-			toDo: !!paquet?.toDo,
-			facileTest: !!paquet?.facileTest,
-			filedSip: !!paquet?.filedSip,
+			toDo: isFlagTruthy(paquet?.toDo),
+			facileTest: isFlagTruthy(paquet?.facileTest),
+			filedSip: isFlagTruthy(paquet?.filedSip),
 			includeOldCote: true,
 		},
 		afterMount: async ({ form }) => {

@@ -48,10 +48,15 @@ function removeDataTableSearchHooksIfAny() {
 }
 
 function isToDoTruthy(value) {
-    if (value === true || value === 1) return true;
+    if (value === true) return true;
+    if (value === false || value === 0) return false;
+    if (typeof value === 'number') return value !== 0;
     if (typeof value === 'string') {
         const v = value.trim().toLowerCase();
-        return v === '1' || v === 'true' || v === 'oui' || v === 'yes';
+        if (!v) return false;
+        const asNumber = Number(v);
+        if (!Number.isNaN(asNumber)) return asNumber !== 0;
+        return v === 'true' || v === 'oui' || v === 'yes';
     }
     return false;
 }
@@ -399,13 +404,13 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
                 const title = safeTitleAttr(v || '');
                 return `<span title="${title}">${safe}</span>`;
             } },
-            { data: 'filedSip', render: v => v ? '<span class="badge bg-primary">Oui</span>' : '<span class="badge bg-secondary">Non</span>' },
+            { data: 'filedSip', render: v => isToDoTruthy(v) ? '<span class="badge bg-primary">Oui</span>' : '<span class="badge bg-secondary">Non</span>' },
             { data: 'statusId', render: (v) => {
                 const status = statusById.get(String(v)) ?? statusById.get('1') ?? null;
                 return renderStatusBadge(status);
             } },
             { data: 'toDo', render: (v) =>
-                `<input type="checkbox" class="form-check-input toDo-checkbox" ${v ? 'checked' : ''}>`
+                `<input type="checkbox" class="form-check-input toDo-checkbox" ${isToDoTruthy(v) ? 'checked' : ''}>`
             },
             { data: 'lastmodifDateISO', visible: false }
         ],
