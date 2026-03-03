@@ -108,7 +108,6 @@ export default function loginPage() {
 		}
 	});
 
-	// Lien mot de passe oublié supprimé
 }
 
 function createMain() {

@@ -23,8 +23,11 @@ export function createNavbar(isLoginPage = false) {
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                            <a class="nav-link text-white" href="#/about">A propos</a>
+                        </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="index.html">Accueil</a>
+                            <a class="nav-link text-white" href="#/">Accueil</a>
                         </li>
                         <li class="nav-item" id="envoiNavItem" style="display:none;">
                             <a class="nav-link text-white" href="#/envoi">Envoi</a>

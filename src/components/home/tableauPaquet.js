@@ -304,7 +304,12 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         const dateFilter = createDateFilter((order) => {
             sortOrder = order;
             if (window.$ && window.$.fn && window.$.fn.DataTable && $.fn.DataTable.isDataTable('#tableau-paquet')) {
-                $('#tableau-paquet').DataTable().order([7, sortOrder]).draw();
+                const dt = $('#tableau-paquet').DataTable();
+                if (todoPriority) {
+                    dt.order([[6, 'desc'], [7, sortOrder]]).draw();
+                } else {
+                    dt.order([7, sortOrder]).draw();
+                }
             }
         });
         dateFilter.style.marginLeft = '0';
@@ -374,8 +379,6 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         return;
     }
 
-    // Cas intermittent typique : plusieurs appels concurrents finissent par arriver ici.
-    // On redétruit juste avant l'init pour éviter "Cannot reinitialise DataTable".
     destroyPaquetDataTableIfAny();
 
     const filteredPaquets = filterCorpusId
@@ -385,7 +388,8 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
     setTableCount(conteneurId, filteredPaquets.length);
 
     let selectedStatusId = restoreState?.selectedStatusId ? String(restoreState.selectedStatusId) : '';
-    let todoOnly = !!restoreState?.todoOnly;
+    let todoPriority = !!restoreState?.todoPriority;
+    let savedOrderBeforeTodoPriority = null;
 
     const initialOrder = Array.isArray(restoreState?.order) && restoreState.order.length
         ? restoreState.order
@@ -423,14 +427,18 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
                 const status = statusById.get(String(v)) ?? statusById.get('1') ?? null;
                 return renderStatusBadge(status);
             } },
-            { data: 'toDo', render: (v) =>
-                `<input type="checkbox" class="form-check-input toDo-checkbox" ${isToDoTruthy(v) ? 'checked' : ''}>`
-            },
+            { data: 'toDo', render: (v, type) => {
+                // Rendu orthogonal DataTables : pour le tri, on renvoie 1/0.
+                if (type === 'sort' || type === 'type') {
+                    return isToDoTruthy(v) ? 1 : 0;
+                }
+                return `<input type="checkbox" class="form-check-input toDo-checkbox" ${isToDoTruthy(v) ? 'checked' : ''}>`;
+            } },
             { data: 'lastmodifDateISO', visible: false }
         ],
 
         columnDefs: [
-            { targets: 6, orderable: false }
+            { targets: 6, orderable: true }
         ],
 
         deferRender: true,
@@ -469,26 +477,22 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             return String(rowStatusId) === String(selectedStatusId);
         };
         window.$.fn.dataTable.ext.search.push(statusFilterHook);
-
-        // Filtre "À faire" (sur le booléen toDo)
-        todoFilterHook = function(settings, data, dataIndex) {
-            if (!settings || !settings.nTable || settings.nTable.id !== 'tableau-paquet') return true;
-            if (!todoOnly) return true;
-            const rowData = settings.aoData && settings.aoData[dataIndex] ? settings.aoData[dataIndex]._aData : null;
-            return isToDoTruthy(rowData?.toDo);
-        };
-        window.$.fn.dataTable.ext.search.push(todoFilterHook);
     }
 
-    // Filtre "À faire" via clic sur l'entête de colonne (sans ajouter de contrôle)
+    // Tri "À faire" via clic sur l'entête de colonne : À faire en haut, puis tri par date.
     const todoFilterTh = conteneur.querySelector('#todo-filter-th');
+    const applyTodoPriorityOrder = () => {
+        // Col 6 = À faire, Col 7 = DateTri (cachée)
+        table.order([[6, 'desc'], [7, sortOrder]]);
+    };
+
     const syncTodoHeader = () => {
         if (!todoFilterTh) return;
-        todoFilterTh.setAttribute('aria-pressed', todoOnly ? 'true' : 'false');
-        todoFilterTh.classList.toggle('text-decoration-underline', todoOnly);
-        todoFilterTh.title = todoOnly
-            ? 'Filtre actif : affiche uniquement les paquets à faire (cliquer pour désactiver)'
-            : 'Cliquer pour filtrer : À faire uniquement';
+        todoFilterTh.setAttribute('aria-pressed', todoPriority ? 'true' : 'false');
+        todoFilterTh.classList.toggle('text-decoration-underline', todoPriority);
+        todoFilterTh.title = todoPriority
+            ? 'Tri actif : À faire en haut, puis tri par date (cliquer pour désactiver)'
+            : 'Cliquer pour trier : À faire en haut, puis tri par date';
     };
     if (todoFilterTh) {
         // Capture pour éviter le tri DataTables sur ce header.
@@ -496,16 +500,45 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             evt.preventDefault();
             evt.stopPropagation();
             evt.stopImmediatePropagation();
-            todoOnly = !todoOnly;
+            if (!todoPriority) {
+                // Sauvegarde l'ordre actuel pour pouvoir revenir à l'état précédent.
+                try {
+                    savedOrderBeforeTodoPriority = table.order();
+                } catch (_) {
+                    savedOrderBeforeTodoPriority = null;
+                }
+            }
+            todoPriority = !todoPriority;
             syncTodoHeader();
-            table.draw();
+            if (todoPriority) {
+                applyTodoPriorityOrder();
+                table.draw();
+            } else if (Array.isArray(savedOrderBeforeTodoPriority) && savedOrderBeforeTodoPriority.length) {
+                table.order(savedOrderBeforeTodoPriority).draw();
+            } else {
+                table.order([[7, sortOrder]]).draw();
+            }
         }, true);
         todoFilterTh.addEventListener('keydown', (evt) => {
             if (evt.key === 'Enter' || evt.key === ' ') {
                 evt.preventDefault();
-                todoOnly = !todoOnly;
+                if (!todoPriority) {
+                    try {
+                        savedOrderBeforeTodoPriority = table.order();
+                    } catch (_) {
+                        savedOrderBeforeTodoPriority = null;
+                    }
+                }
+                todoPriority = !todoPriority;
                 syncTodoHeader();
-                table.draw();
+                if (todoPriority) {
+                    applyTodoPriorityOrder();
+                    table.draw();
+                } else if (Array.isArray(savedOrderBeforeTodoPriority) && savedOrderBeforeTodoPriority.length) {
+                    table.order(savedOrderBeforeTodoPriority).draw();
+                } else {
+                    table.order([[7, sortOrder]]).draw();
+                }
             }
         });
         syncTodoHeader();
@@ -568,17 +601,11 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         statusFilterCol.appendChild(wrapper);
     }
 
-    // Applique les filtres restaurés (status/todo) une première fois.
-    // (Les hooks ext.search sont ajoutés après l'init DataTables : un draw est nécessaire.)
+    // Applique les réglages restaurés (status + tri "À faire") une première fois.
     if (restoreState) {
-        // Sync l'état visuel du filtre "À faire" si demandé.
-        const todoFilterTh = conteneur.querySelector('#todo-filter-th');
-        if (todoFilterTh) {
-            todoFilterTh.setAttribute('aria-pressed', todoOnly ? 'true' : 'false');
-            todoFilterTh.classList.toggle('text-decoration-underline', todoOnly);
-            todoFilterTh.title = todoOnly
-                ? 'Filtre actif : affiche uniquement les paquets à faire (cliquer pour désactiver)'
-                : 'Cliquer pour filtrer : À faire uniquement';
+        // Si le tri "À faire" est demandé par l'état restauré, on l'applique maintenant.
+        if (todoPriority) {
+            applyTodoPriorityOrder();
         }
 
         table.draw(false);
@@ -792,7 +819,11 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             if (window.afficherTableauToDoPaquet) {
                 window.afficherTableauToDoPaquet('to-do-paquet-conteneur');
             }
-            // Si le filtre "À faire" est actif, le changement doit refléter immédiatement le tableau.
+            // Met à jour la donnée DataTables + rafraîchit l'affichage/tri immédiatement.
+            try {
+                table.row(rowEl).data(paquet).invalidate();
+            } catch (_) {
+            }
             table.draw(false);
         } catch (err) {
             alert('Erreur lors de la modification du toDo');

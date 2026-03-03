@@ -7,6 +7,11 @@ const routes = {
 		script: './src/pages/home/accueil.js',
 		title: 'Accueil'
 	},
+	'/about': {
+		template: () => import('./src/pages/about/about.js'),
+		script: './src/pages/about/about.js',
+		title: 'À propos'
+	},
 	'/login': {
 		template: () => import('./src/pages/login/login.js'),
 		script: './src/pages/login/login.js',
@@ -36,7 +41,8 @@ function getOrCreateMain() {
 async function navigate(path) {
 	// Vérifie l'authentification
 	const authenticated = await isAuthenticated();
-	if (!authenticated && path !== '/login') {
+	const publicPaths = new Set(['/login', '/about']);
+	if (!authenticated && !publicPaths.has(path)) {
 		window.location.hash = '#/login';
 		return;
 	}
