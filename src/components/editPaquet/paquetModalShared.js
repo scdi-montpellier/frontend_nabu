@@ -71,15 +71,51 @@ export function destroyDataTableIfNeeded(tableSelector) {
 	}
 }
 
+function getCurrentCorpusFilterId() {
+	// Sur la page d'accueil, le filtre corpus est un <select class="corpus-select">.
+	// On privilégie la valeur DOM (compatible Select2).
+	const selectEl = document.querySelector('main .corpus-select, .corpus-select');
+	const raw = selectEl ? String(selectEl.value || '') : '';
+	if (!raw || raw === 'ALL') return null;
+	return raw;
+}
+
+function capturePaquetTableState() {
+	try {
+		const $ = window.jQuery || window.$;
+		if (!$ || !$.fn || !$.fn.DataTable) return null;
+		if (!$.fn.DataTable.isDataTable || !$.fn.DataTable.isDataTable('#tableau-paquet')) return null;
+		const dt = $('#tableau-paquet').DataTable();
+
+		const statusSelect = document.getElementById('status-filter-select');
+		const dateSelect = document.getElementById('date-sort-select');
+		const todoTh = document.getElementById('todo-filter-th');
+
+		return {
+			search: typeof dt.search === 'function' ? dt.search() : '',
+			order: typeof dt.order === 'function' ? dt.order() : null,
+			pageLength: dt.page && typeof dt.page.len === 'function' ? dt.page.len() : null,
+			page: dt.page && typeof dt.page === 'function' ? dt.page() : null,
+			selectedStatusId: statusSelect ? String(statusSelect.value || '') : '',
+			dateSortOrder: dateSelect ? String(dateSelect.value || 'desc') : 'desc',
+			todoOnly: todoTh ? todoTh.getAttribute('aria-pressed') === 'true' : false,
+		};
+	} catch (e) {
+		return null;
+	}
+}
+
 export async function refreshPaquetTables() {
 	try {
+		const filterCorpusId = getCurrentCorpusFilterId();
+		const tableState = capturePaquetTableState();
 		destroyDataTableIfNeeded('#tableau-paquet');
 		if (window.afficherTableauPaquet) {
-			window.afficherTableauPaquet('tableau-paquet-conteneur');
+			window.afficherTableauPaquet('tableau-paquet-conteneur', filterCorpusId, { state: tableState });
 		} else {
 			const module = await import('../home/tableauPaquet.js');
 			if (module && typeof module.afficherTableauPaquet === 'function') {
-				module.afficherTableauPaquet('tableau-paquet-conteneur');
+				module.afficherTableauPaquet('tableau-paquet-conteneur', filterCorpusId, { state: tableState });
 			} else if (window.reloadTableauPaquet) {
 				window.reloadTableauPaquet();
 			}

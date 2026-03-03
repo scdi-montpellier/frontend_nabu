@@ -16,6 +16,10 @@ export async function afficherTableauToDoPaquet(conteneurId = 'to-do-paquet-cont
 		document.body.appendChild(conteneur);
 	}
 
+	const renderId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+	conteneur.dataset.toDoRenderId = renderId;
+	const isStale = () => conteneur.dataset.toDoRenderId !== renderId;
+
 	// État de chargement (header géré par la page)
 	setMiniTableCount(conteneurId, '…');
 	conteneur.innerHTML = `
@@ -27,10 +31,12 @@ export async function afficherTableauToDoPaquet(conteneurId = 'to-do-paquet-cont
 
 	// Récupère tous les paquets
 	const paquetsResult = await fetchAllPaquets();
+	if (isStale()) return;
 	let paquets = paquetsResult && paquetsResult.data ? paquetsResult.data : paquetsResult;
 	if (!paquets || !Array.isArray(paquets)) {
+		if (isStale()) return;
 		setMiniTableCount(conteneurId, 0);
-		conteneur.innerHTML += '<div class="alert alert-danger">Erreur lors du chargement des paquets.</div>';
+		conteneur.innerHTML = '<div class="alert alert-danger">Erreur lors du chargement des paquets.</div>';
 		return;
 	}
 	// Filtre : paquets à faire 
@@ -48,7 +54,7 @@ export async function afficherTableauToDoPaquet(conteneurId = 'to-do-paquet-cont
 	const loading = conteneur.querySelector('[data-mini-table-loading]');
 	if (loading) loading.remove();
 	if (paquets.length === 0) {
-		conteneur.innerHTML += '<div class="text-muted text-center">Aucun paquet à faire.</div>';
+		conteneur.innerHTML = '<div class="text-muted text-center">Aucun paquet à faire.</div>';
 		return;
 	}
 

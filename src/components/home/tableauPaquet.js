@@ -182,7 +182,7 @@ function getDataTablesFrenchLanguage() {
     };
 }
 
-export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conteneur', filterCorpusId = null) {
+export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conteneur', filterCorpusId = null, options = {}) {
     const currentRender = ++renderSequence;
 
     let conteneur = document.getElementById(conteneurId);
@@ -296,8 +296,10 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         </div>
     </div>`;
 
+    const restoreState = options && typeof options === 'object' ? options.state : null;
+
     const dateFilterCol = conteneur.querySelector('#tableau-paquet-date-filter-col');
-    let sortOrder = 'desc';
+    let sortOrder = restoreState?.dateSortOrder === 'asc' ? 'asc' : 'desc';
     if (dateFilterCol) {
         const dateFilter = createDateFilter((order) => {
             sortOrder = order;
@@ -309,6 +311,12 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         dateFilter.classList.add('input-group-sm');
         dateFilter.style.minWidth = '220px';
         dateFilterCol.appendChild(dateFilter);
+
+        // Restaure la sélection UI du tri date.
+        const dateSelect = dateFilter.querySelector('#date-sort-select');
+        if (dateSelect && restoreState?.dateSortOrder) {
+            dateSelect.value = String(restoreState.dateSortOrder) === 'asc' ? 'asc' : 'desc';
+        }
     }
 
     const scrollDiv = conteneur.querySelector('#tableau-paquet-scroll');
@@ -376,8 +384,14 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
 
     setTableCount(conteneurId, filteredPaquets.length);
 
-    let selectedStatusId = '';
-    let todoOnly = false;
+    let selectedStatusId = restoreState?.selectedStatusId ? String(restoreState.selectedStatusId) : '';
+    let todoOnly = !!restoreState?.todoOnly;
+
+    const initialOrder = Array.isArray(restoreState?.order) && restoreState.order.length
+        ? restoreState.order
+        : [[7, sortOrder]];
+    const initialSearch = restoreState?.search ? String(restoreState.search) : '';
+    const initialPageLength = Number.isFinite(restoreState?.pageLength) ? restoreState.pageLength : undefined;
 
     const $ = window.jQuery || window.$;
     const table = $('#tableau-paquet').DataTable({
@@ -422,10 +436,28 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         deferRender: true,
 
         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Tous"]],
-        order: [[7, 'desc']],
+        order: initialOrder,
+        search: { search: initialSearch },
+        ...(initialPageLength !== undefined ? { pageLength: initialPageLength } : {}),
         info: false,
         language: getDataTablesFrenchLanguage()
     });
+
+    // Restauration robuste (certaines versions de DataTables ignorent l'option `search` à l'init).
+    if (restoreState) {
+        try {
+            if (restoreState.search !== undefined && restoreState.search !== null) {
+                table.search(String(restoreState.search));
+            }
+            if (Array.isArray(restoreState.order) && restoreState.order.length) {
+                table.order(restoreState.order);
+            }
+            if (Number.isFinite(restoreState.pageLength)) {
+                table.page.len(restoreState.pageLength);
+            }
+        } catch (_) {
+        }
+    }
 
     // Filtre par statut (filtrage exact sur l'ID)
     if (window.$ && window.$.fn && window.$.fn.dataTable && window.$.fn.dataTable.ext && window.$.fn.dataTable.ext.search) {
@@ -526,9 +558,40 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             table.draw();
         });
 
+        // Restaure la sélection UI du filtre statut.
+        if (selectedStatusId) {
+            select.value = selectedStatusId;
+        }
+
         wrapper.appendChild(label);
         wrapper.appendChild(select);
         statusFilterCol.appendChild(wrapper);
+    }
+
+    // Applique les filtres restaurés (status/todo) une première fois.
+    // (Les hooks ext.search sont ajoutés après l'init DataTables : un draw est nécessaire.)
+    if (restoreState) {
+        // Sync l'état visuel du filtre "À faire" si demandé.
+        const todoFilterTh = conteneur.querySelector('#todo-filter-th');
+        if (todoFilterTh) {
+            todoFilterTh.setAttribute('aria-pressed', todoOnly ? 'true' : 'false');
+            todoFilterTh.classList.toggle('text-decoration-underline', todoOnly);
+            todoFilterTh.title = todoOnly
+                ? 'Filtre actif : affiche uniquement les paquets à faire (cliquer pour désactiver)'
+                : 'Cliquer pour filtrer : À faire uniquement';
+        }
+
+        table.draw(false);
+
+        // Restaure la page après application des filtres (si possible).
+        if (Number.isInteger(restoreState.page) && restoreState.page >= 0) {
+            const info = table.page.info();
+            const maxPage = Math.max(0, (info?.pages ?? 1) - 1);
+            const targetPage = Math.min(restoreState.page, maxPage);
+            if (targetPage !== table.page()) {
+                table.page(targetPage).draw('page');
+            }
+        }
     }
 
     table.on('draw.dt', function() {
