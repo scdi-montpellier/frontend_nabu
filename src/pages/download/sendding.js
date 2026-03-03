@@ -12,7 +12,7 @@ function bootstrapCssDejaCharge() {
   return Array.from(document.querySelectorAll('link[rel="stylesheet"][href]'))
     .some((link) => {
       const href = link.getAttribute('href') || '';
-      // On vise la CSS Bootstrap "core" (pas bootstrap-icons).
+      
       return href.includes('bootstrap') && href.includes('dist/css') && href.includes('bootstrap.min.css');
     });
 }
