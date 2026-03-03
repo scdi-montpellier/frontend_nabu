@@ -329,6 +329,15 @@ body.page-login {
 	font-family: 'Cormorant Garamond', serif;
 }
 
+/* Typo de marque (navbar, titres courts) */
+.nabu-title {
+	font-family: 'Cormorant Garamond', serif;
+}
+
+.nabu-subtitle {
+	letter-spacing: 0.5px;
+}
+
 .login-subtitle {
 	font-weight: 600;
 }

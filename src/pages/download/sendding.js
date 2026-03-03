@@ -4,10 +4,100 @@ import { mettreAJourStatutPaquet } from './statutPaquet.js';
 import { callVitamAPI } from '../../API/vitam/vitamAPI.js';
 
 // === Dépendances UI externes ===
-chargerFeuilleDeStyle('https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css');
-chargerFeuilleDeStyle('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css');
-chargerScript('https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js')
-  .then(initialiserUI);
+const BOOTSTRAP_CSS_URL = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css';
+const FONTAWESOME_CSS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css';
+const SPARK_MD5_URL = 'https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js';
+
+function bootstrapCssDejaCharge() {
+  return Array.from(document.querySelectorAll('link[rel="stylesheet"][href]'))
+    .some((link) => {
+      const href = link.getAttribute('href') || '';
+      
+      return href.includes('bootstrap') && href.includes('dist/css') && href.includes('bootstrap.min.css');
+    });
+}
+
+function nettoyerBootstrapCssDupliquee() {
+  const styleLink = document.querySelector('link[rel="stylesheet"][href$="style.css"], link[rel="stylesheet"][href*="/style.css"]');
+  const bootLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"][href]'))
+    .filter((link) => {
+      const href = link.getAttribute('href') || '';
+      return href.includes('bootstrap') && href.includes('dist/css') && href.includes('bootstrap.min.css');
+    });
+
+  if (bootLinks.length <= 1) return;
+
+  const hasBootstrapBeforeStyle = styleLink
+    ? bootLinks.some((link) => (link.compareDocumentPosition(styleLink) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0)
+    : true;
+
+  bootLinks.forEach((link, idx) => {
+    if (!styleLink) {
+      if (idx > 0) link.remove();
+      return;
+    }
+
+    const isAfterStyle = (styleLink.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+    if (hasBootstrapBeforeStyle && isAfterStyle) {
+      link.remove();
+    }
+  });
+}
+
+function chargerBootstrapCssUneFois() {
+  if (bootstrapCssDejaCharge()) return;
+  chargerFeuilleDeStyle(BOOTSTRAP_CSS_URL);
+}
+
+function chargerFeuilleDeStyleUneFois(url) {
+  const exists = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+    .some((link) => link.getAttribute('href') === url);
+  if (exists) return;
+  chargerFeuilleDeStyle(url);
+}
+
+function chargerScriptUneFois(url, { isReady } = {}) {
+  if (typeof isReady === 'function' && isReady()) {
+    return Promise.resolve();
+  }
+
+  const existing = Array.from(document.querySelectorAll('script[src]'))
+    .find((script) => script.getAttribute('src') === url);
+
+  if (existing) {
+    if (typeof isReady !== 'function') {
+      return Promise.resolve();
+    }
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => reject(new Error(`Timeout chargement script: ${url}`)), 15000);
+      const tick = () => {
+        if (isReady()) {
+          clearTimeout(timeoutId);
+          resolve();
+          return;
+        }
+        setTimeout(tick, 50);
+      };
+      tick();
+    });
+  }
+
+  return chargerScript(url);
+}
+
+async function assurerDependancesUi() {
+  nettoyerBootstrapCssDupliquee();
+  chargerBootstrapCssUneFois();
+  chargerFeuilleDeStyleUneFois(FONTAWESOME_CSS_URL);
+  await chargerScriptUneFois(SPARK_MD5_URL, {
+    isReady: () => Boolean(window.SparkMD5)
+  });
+}
+
+export default async function senddingPage() {
+  await assurerDependancesUi();
+  await initialiserUI();
+}
 
 // === État global ===
 window.sendding = {
@@ -64,8 +154,6 @@ function activerAvertissementNavigationPendantVerification() {
 
 // === UI ===
 async function initialiserUI() {
-  document.body.classList.add('page-sendding');
-
   let header = document.querySelector('header');
   if (!header) {
     header = document.createElement('header');
@@ -77,6 +165,7 @@ async function initialiserUI() {
     main = document.createElement('main');
     document.body.appendChild(main);
   }
+  main.className = 'bg-body py-3 py-lg-4';
   main.innerHTML = '';
 
   try {
@@ -93,25 +182,34 @@ async function initialiserUI() {
 
 
   const container = document.createElement('div');
-  container.className = 'container d-flex justify-content-center align-items-center sendding-container';
+  container.className = 'container-xxl';
+
+  const row = document.createElement('div');
+  row.className = 'row justify-content-center';
+
+  const col = document.createElement('div');
+  col.className = 'col-12 col-md-10 col-lg-7 col-xl-6';
 
   const card = document.createElement('div');
-  card.className = 'card border-0 shadow-lg w-100 sendding-card';
+  card.className = 'card shadow-sm';
 
   card.innerHTML = `
-    <div class="card-header bg-gradient bg-primary text-white text-center py-4 rounded-top">
-      <h3 class="mb-0 fw-bold">
-        <i class="fa-solid fa-file-zipper me-2"></i>
-        Envoi d’un paquet ZIP
-      </h3>
+    <div class="card-header bg-body-tertiary">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <span class="fw-semibold">
+          <i class="fa-solid fa-file-zipper me-2"></i>
+          Envoi d’un paquet ZIP
+        </span>
+      </div>
     </div>
 
-    <div class="card-body p-0">
-      <div class="mb-4 p-4">
+    <div class="card-body p-3 p-lg-4">
+      <div class="mb-3">
         <label class="form-label fw-semibold">
           <i class="fa-solid fa-folder-open me-1 text-secondary"></i>
           Fichier ZIP
         </label>
+
         <div id="dropZone" class="border-2 border-dashed rounded p-4 text-center mb-2">
           <i class="fa-solid fa-cloud-upload-alt fa-3x text-secondary mb-2"></i>
           <p class="mb-2 fw-semibold">Glissez-déposez votre fichier ZIP ici</p>
@@ -121,6 +219,7 @@ async function initialiserUI() {
             <i class="fa-solid fa-folder-open me-2"></i>Parcourir
           </button>
         </div>
+
         <div id="selectedFile" class="d-none alert alert-info py-2 px-3 d-flex align-items-center justify-content-between">
           <div>
             <i class="fa-solid fa-file-zipper me-2"></i>
@@ -131,79 +230,80 @@ async function initialiserUI() {
             <i class="fa-solid fa-times"></i>
           </button>
         </div>
+
         <div class="form-text">Format accepté : <span class="badge bg-secondary">.zip</span></div>
       </div>
 
-      <div class="px-4">
-        <button id="btnEnvoyer"
-                class="btn btn-success btn-lg w-100 fw-semibold mb-4 d-flex justify-content-center align-items-center gap-2 shadow-sm"
-                ${!isAdmin ? 'disabled' : ''}>
-          <i class="fa-solid fa-cloud-arrow-up"></i>
-          <span>Envoyer le fichier</span>
-        </button>
+      <button id="btnEnvoyer"
+              class="btn btn-success btn-lg w-100 fw-semibold mb-3 d-flex justify-content-center align-items-center gap-2"
+              ${!isAdmin ? 'disabled' : ''}>
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+        <span>Envoyer le fichier</span>
+      </button>
 
-        <div id="zoneStatus" class="alert d-none text-center mb-3"></div>
-        <div id="etatUpload" class="alert d-none text-center" role="alert"></div>
+      <div id="zoneStatus" class="alert d-none text-center mb-3"></div>
+      <div id="etatUpload" class="alert d-none text-center" role="alert"></div>
 
-        ${!isAdmin ? `
-          <div class="alert alert-danger text-center small rounded-pill px-3 py-2">
-            <i class="fa-solid fa-triangle-exclamation me-1"></i>
-            Accès réservé aux administrateurs
-          </div>` : ''}
+      ${!isAdmin ? `
+        <div class="alert alert-danger text-center small">
+          <i class="fa-solid fa-triangle-exclamation me-1"></i>
+          Accès réservé aux administrateurs
+        </div>` : ''}
 
-        <div id="progressContainer" class="mb-4 d-none">
-          <div class="mb-3">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <label class="form-label small fw-semibold text-muted mb-0">
-                <i class="fa-solid fa-hashtag me-1"></i>
-                Calcul MD5 local
-              </label>
-              <span id="md5Status" class="badge bg-secondary">En attente...</span>
-            </div>
-            <div class="progress progress-sm">
-              <div id="md5ProgressBar"
-                   class="progress-bar bg-info"
-                   role="progressbar"
-                   style="width:0%;"
-                   aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
+      <div id="progressContainer" class="mb-2 d-none">
+        <div class="mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-label small fw-semibold text-muted mb-0">
+              <i class="fa-solid fa-hashtag me-1"></i>
+              Calcul MD5 local
+            </label>
+            <span id="md5Status" class="badge bg-secondary">En attente...</span>
           </div>
-          
-          <div class="mb-3">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <label class="form-label small fw-semibold text-muted mb-0">
-                <i class="fa-solid fa-cloud-upload-alt me-1"></i>
-                Envoi du fichier
-              </label>
-              <span id="uploadStatus" class="badge bg-secondary">En attente...</span>
-            </div>
-            <div class="progress progress-sm">
-              <div id="uploadProgressBar"
-                   class="progress-bar bg-success"
-                   role="progressbar"
-                   style="width:0%;"
-                   aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
+          <div class="progress progress-sm">
+            <div id="md5ProgressBar"
+                 class="progress-bar bg-info"
+                 role="progressbar"
+                 style="width:0%;"
+                 aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
-          
-          <div class="d-flex justify-content-between align-items-center mt-3">
-            <small id="progressTxt" class="text-muted"></small>
-            <button id="btnCancelUpload" class="btn btn-sm btn-outline-danger">
-              <i class="fa-solid fa-times me-1"></i>Annuler
-            </button>
-          </div>
-          <input id="md5Local" type="hidden">
         </div>
+        
+        <div class="mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-label small fw-semibold text-muted mb-0">
+              <i class="fa-solid fa-cloud-upload-alt me-1"></i>
+              Envoi du fichier
+            </label>
+            <span id="uploadStatus" class="badge bg-secondary">En attente...</span>
+          </div>
+          <div class="progress progress-sm">
+            <div id="uploadProgressBar"
+                 class="progress-bar bg-success"
+                 role="progressbar"
+                 style="width:0%;"
+                 aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+        </div>
+        
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <small id="progressTxt" class="text-muted"></small>
+          <button id="btnCancelUpload" class="btn btn-sm btn-outline-danger">
+            <i class="fa-solid fa-times me-1"></i>Annuler
+          </button>
+        </div>
+        <input id="md5Local" type="hidden">
       </div>
     </div>
 
-    <div class="card-footer text-center text-muted small rounded-bottom bg-light border-top">
+    <div class="card-footer bg-body-tertiary text-muted small">
       <i class="fa-solid fa-shield-halved me-1"></i>
       Vérification d’intégrité MD5
     </div>
   `;
 
-  container.appendChild(card);
+  col.appendChild(card);
+  row.appendChild(col);
+  container.appendChild(row);
   main.appendChild(container);
 
   if (isAdmin) {
