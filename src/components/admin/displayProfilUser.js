@@ -23,8 +23,10 @@ export function afficherProfilUtilisateur(user) {
 	   // Récupérer le rôle de l'utilisateur courant (admin uniquement peut supprimer)
 	import('../../API/users/currentUser.js').then(async ({ getCurrentUser }) => {
 		   const currentUser = await getCurrentUser();
-		   const isAdmin = currentUser && currentUser.roleId === 1;
+		   const currentRoleId = currentUser ? Number(currentUser.roleId) : NaN;
+		   const isAdmin = Number.isFinite(currentRoleId) && currentRoleId === 1;
 		   const isSystemUser = user.email === 'utilisateur.supprime@nabu.local';
+		   const viewedRoleId = Number(user.roleId);
 
 		   const modal = document.createElement('div');
 		   modal.className = 'modal fade';
@@ -33,8 +35,8 @@ export function afficherProfilUtilisateur(user) {
 		   modal.setAttribute('aria-hidden', 'true');
 
 		   const role = {
-			   label: user.roleId === 1 ? 'Admin' : user.roleId === 2 ? 'Utilisateur' : 'Inconnu',
-			   badge: user.roleId === 1 ? 'bg-success' : user.roleId === 2 ? 'bg-primary' : 'bg-secondary'
+			   label: viewedRoleId === 1 ? 'Admin' : viewedRoleId === 2 ? 'Utilisateur' : 'Inconnu',
+			   badge: viewedRoleId === 1 ? 'bg-success' : viewedRoleId === 2 ? 'bg-primary' : 'bg-secondary'
 		   };
 
 		   modal.innerHTML = `
@@ -103,19 +105,15 @@ export function afficherProfilUtilisateur(user) {
 
 		   document.body.appendChild(modal);
 
-		   // Initialisation Bootstrap
 		   const bootstrapModal = new bootstrap.Modal(modal);
 		   bootstrapModal.show();
 
-		   // Fonctionnalité : Modifier mot de passe avec card
-		   // Fonctionnalité : Suppression utilisateur (seulement si admin)
+		   //  Suppression utilisateur
 		   if (isAdmin && !isSystemUser) {
 			   const btnSupprimerUser = modal.querySelector('#btn-supprimer-user');
 			   if (btnSupprimerUser) {
 				   btnSupprimerUser.addEventListener('click', () => {
-					   // Supprimer toute ancienne card de confirmation
 					   document.getElementById('confirm-delete-user-card')?.remove();
-					   // Supprimer la card d'information utilisateur (modale)
 					   const infoModal = document.getElementById('profilUtilisateurModal');
 					   if (infoModal) infoModal.remove();
 
@@ -143,7 +141,6 @@ export function afficherProfilUtilisateur(user) {
 					   // Annuler
 					   card.querySelector('#btn-cancel-delete-user').onclick = () => {
 						   card.remove();
-						   // Supprimer tout backdrop Bootstrap restant
 						   document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
 						   // Réafficher la modale d'information utilisateur
 						   afficherProfilUtilisateur(user);
@@ -174,7 +171,6 @@ export function afficherProfilUtilisateur(user) {
 			   const formModifierMdp = cardModifierMdp.querySelector('#form-modifier-mdp');
 			   const inputNouveauMdp = cardModifierMdp.querySelector('#input-nouveau-mdp');
 			   const btnAnnulerMdp = cardModifierMdp.querySelector('#btn-annuler-mdp');
-			   // btnValiderMdp n'est plus utilisé directement, la soumission se fait via le formulaire
 
 			   const btnToggleNouveauMdp = cardModifierMdp.querySelector('#toggle-nouveau-mdp');
 			   const eyeNouveauMdp = cardModifierMdp.querySelector('#eye-nouveau-mdp');
