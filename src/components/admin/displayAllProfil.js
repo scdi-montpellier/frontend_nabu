@@ -9,7 +9,6 @@ export async function afficherCardUtilisateurs(containerSelector = 'main') {
 	const container = document.querySelector(containerSelector);
 	if (!container) return;
 
-	// Structure row Bootstrap pour affichage côte à côte
 	container.innerHTML = `
 		<div class="row g-4">
 			<div class="col-lg-8 col-12" id="users-table-col"></div>
@@ -20,17 +19,19 @@ export async function afficherCardUtilisateurs(containerSelector = 'main') {
 	const tableCol = container.querySelector('#users-table-col');
 	const profilCol = container.querySelector('#profil-connecte-col');
 
-	// Spinner dans la colonne du tableau
 	tableCol.innerHTML = `
 		<div class="d-flex justify-content-center my-5">
-			<div class="spinner-border text-dark" role="status"></div>
+			<div class="spinner-border" role="status" aria-label="Chargement">
+				<span class="visually-hidden">Chargement…</span>
+			</div>
 		</div>
 	`;
 
-	// Spinner dans la colonne du profil
 	profilCol.innerHTML = `
 		<div class="d-flex justify-content-center my-5">
-			<div class="spinner-border text-dark" role="status"></div>
+			<div class="spinner-border" role="status" aria-label="Chargement">
+				<span class="visually-hidden">Chargement…</span>
+			</div>
 		</div>
 	`;
 
@@ -47,21 +48,28 @@ export async function afficherCardUtilisateurs(containerSelector = 'main') {
 			`;
 		} else {
 			const card = document.createElement('div');
-			card.className = 'card shadow-sm my-4';
+			card.className = 'card shadow-sm border-0';
 			card.innerHTML = `
-				<div class="card-header d-flex justify-content-between align-items-center text-dark fw-semibold fs-5">
+				<div class="card-header bg-body-tertiary d-flex align-items-center justify-content-between flex-wrap gap-2">
 					<div class="d-flex align-items-center gap-2">
-						<span class="badge bg-info">Nombre d'utilisateur : ${users.length}</span>
+						<span class="fw-semibold">
+							<i class="bi bi-people me-2" aria-hidden="true"></i>
+							Utilisateurs
+						</span>
+						<span class="badge text-bg-info">${users.length}</span>
 					</div>
-					<span class="flex-fill text-center">Liste des utilisateurs</span>
 					<div class="d-flex align-items-center gap-2">
-						<button id="btn-ajouter-profil" type="button" class="btn btn-primary btn-sm ms-2">Création de profil</button>
+						<button id="btn-ajouter-profil" type="button" class="btn btn-primary btn-sm">
+							<i class="bi bi-person-plus me-1" aria-hidden="true"></i>
+							Création de profil
+						</button>
 					</div>
 				</div>
 				<div class="card-body p-0">
 					<div class="table-responsive">
-						<table class="table table-hover align-middle mb-0 border-0" id="table-users">
-							<thead class="table-dark text-center">
+							<table class="table table-hover table-striped align-middle mb-0" id="table-users">
+								<caption class="visually-hidden">Liste des utilisateurs</caption>
+								<thead class="table-dark text-center align-middle">
 								<tr>
 									<th>Nom</th>
 									<th>Prénom</th>
@@ -71,19 +79,19 @@ export async function afficherCardUtilisateurs(containerSelector = 'main') {
 							</thead>
 							<tbody class="text-center">
 								${users.map((user, idx) => `
-									<tr data-user-idx="${idx}" style="cursor:pointer;">
+										<tr data-user-idx="${idx}" role="button" tabindex="0">
 										<td>${user.nom ?? ''}</td>
 										<td>${user.prenom ?? ''}</td>
 										<td>${user.email ?? ''}</td>
 										<td>
-											<span class="badge ${
-												user.roleId === 1
+										<span class="badge ${
+												Number(user.roleId) === 1
 													? 'bg-success'
-													: user.roleId === 2
-													? 'bg-primary'
-													: 'bg-dark'
-											}">
-												${user.roleId === 1 ? 'Admin' : user.roleId === 2 ? 'Utilisateur' : 'Inconnu'}
+													: Number(user.roleId) === 2
+												? 'bg-primary'
+												: 'bg-dark'
+										}">
+											${Number(user.roleId) === 1 ? 'Admin' : Number(user.roleId) === 2 ? 'Utilisateur' : 'Inconnu'}
 											</span>
 										</td>
 									</tr>
@@ -96,20 +104,24 @@ export async function afficherCardUtilisateurs(containerSelector = 'main') {
 			tableCol.innerHTML = '';
 			tableCol.appendChild(card);
 
-			// Ajout de l'écouteur sur chaque ligne du tableau
 			const table = card.querySelector('#table-users');
 			if (table) {
 				table.querySelectorAll('tbody tr').forEach(tr => {
-					tr.addEventListener('click', function() {
-						const idx = this.getAttribute('data-user-idx');
-						if (users[idx]) {
-							afficherProfilUtilisateur(users[idx], containerSelector);
+					const open = () => {
+						const idx = tr.getAttribute('data-user-idx');
+						if (users[idx]) afficherProfilUtilisateur(users[idx], containerSelector);
+					};
+					tr.addEventListener('click', open);
+					tr.addEventListener('keydown', (e) => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							e.preventDefault();
+							open();
 						}
 					});
 				});
 			}
 
-			// Ajout de l'écouteur sur le bouton Ajouter
+			// le bouton Ajouter
 			const btnAjouterProfil = card.querySelector('#btn-ajouter-profil');
 			if (btnAjouterProfil) {
 				btnAjouterProfil.addEventListener('click', () => {
@@ -119,6 +131,7 @@ export async function afficherCardUtilisateurs(containerSelector = 'main') {
 		}
 
 		// Affichage du profil connecté à droite
+		profilCol.classList.add('sticky-lg');
 		await afficherCardProfilConnecte('#profil-connecte-col');
 
 	} catch (error) {

@@ -5,10 +5,31 @@ import { afficherCardUtilisateurs } from '../../components/admin/displayAllProfi
 export default async function adminPage() {
 	const main = document.querySelector('main') || createMain();
 
-	const container = document.createElement('div');
-	container.className = 'container';
-	main.appendChild(container);
-	await afficherCardUtilisateurs('.container:last-child');
+	const page = document.createElement('div');
+	page.className = 'container-xxl py-4';
+	page.innerHTML = `
+		<div class="d-flex flex-column gap-2 mb-4">
+			<div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+				<div>
+					<h1 class="h3 mb-1">Administration</h1>
+					<div class="text-body-secondary">Gestion des utilisateurs et des profils</div>
+				</div>
+				<nav aria-label="breadcrumb">
+					<ol class="breadcrumb mb-0">
+						<li class="breadcrumb-item"><a href="#/">Accueil</a></li>
+						<li class="breadcrumb-item active" aria-current="page">Admin</li>
+					</ol>
+				</nav>
+			</div>
+		</div>
+
+		<div class="card shadow-sm border-0">
+			<div class="card-body p-3 p-lg-4" id="admin-users"></div>
+		</div>
+	`;
+
+	main.appendChild(page);
+	await afficherCardUtilisateurs('#admin-users');
 }
 
 function createMain() {

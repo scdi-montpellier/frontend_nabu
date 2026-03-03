@@ -26,8 +26,9 @@ export async function afficherCardProfilConnecte(containerSelector = 'main') {
 
 
 		   // Détermination du rôle
-		   const role = user.roleId === 1 ? 'Admin' : user.roleId === 2 ? 'Utilisateur' : 'Inconnu';
-		   const badge = user.roleId === 1 ? 'bg-success' : user.roleId === 2 ? 'bg-primary' : 'bg-secondary';
+		   const roleId = Number(user.roleId);
+		   const role = roleId === 1 ? 'Admin' : roleId === 2 ? 'Utilisateur' : 'Inconnu';
+		   const badge = roleId === 1 ? 'bg-success' : roleId === 2 ? 'bg-primary' : 'bg-secondary';
 
 		   // Initiales de l'utilisateur
 		   function getInitials(nom, prenom) {

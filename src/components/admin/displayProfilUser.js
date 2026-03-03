@@ -23,7 +23,10 @@ export function afficherProfilUtilisateur(user) {
 	   // Récupérer le rôle de l'utilisateur courant (admin uniquement peut supprimer)
 	import('../../API/users/currentUser.js').then(async ({ getCurrentUser }) => {
 		   const currentUser = await getCurrentUser();
-		   const isAdmin = currentUser && currentUser.roleId === 1;
+		   const currentRoleId = currentUser ? Number(currentUser.roleId) : NaN;
+		   const isAdmin = Number.isFinite(currentRoleId) && currentRoleId === 1;
+		   const isSystemUser = user.email === 'utilisateur.supprime@nabu.local';
+		   const viewedRoleId = Number(user.roleId);
 
 		   const modal = document.createElement('div');
 		   modal.className = 'modal fade';
@@ -32,8 +35,8 @@ export function afficherProfilUtilisateur(user) {
 		   modal.setAttribute('aria-hidden', 'true');
 
 		   const role = {
-			   label: user.roleId === 1 ? 'Admin' : user.roleId === 2 ? 'Utilisateur' : 'Inconnu',
-			   badge: user.roleId === 1 ? 'bg-success' : user.roleId === 2 ? 'bg-primary' : 'bg-secondary'
+			   label: viewedRoleId === 1 ? 'Admin' : viewedRoleId === 2 ? 'Utilisateur' : 'Inconnu',
+			   badge: viewedRoleId === 1 ? 'bg-success' : viewedRoleId === 2 ? 'bg-primary' : 'bg-secondary'
 		   };
 
 		   modal.innerHTML = `
@@ -66,8 +69,8 @@ export function afficherProfilUtilisateur(user) {
 				   </div>
 
 				   <div class="modal-footer justify-content-center">
-					   <button id="btn-modifier-mdp" class="btn btn-warning">Modifier mot de passe</button>
-					   ${isAdmin ? '<button id="btn-supprimer-user" class="btn btn-danger">Supprimer</button>' : ''}
+					   ${!isSystemUser ? '<button id="btn-modifier-mdp" class="btn btn-warning">Modifier mot de passe</button>' : ''}
+					   ${isAdmin && !isSystemUser ? '<button id="btn-supprimer-user" class="btn btn-danger">Supprimer</button>' : ''}
 				   </div>
 				   <div id="card-modifier-mdp" class="d-none position-absolute top-50 start-50 translate-middle" style="z-index:1056; min-width:320px; max-width:90vw;">
 					   <div class="card shadow border-0">
@@ -102,19 +105,15 @@ export function afficherProfilUtilisateur(user) {
 
 		   document.body.appendChild(modal);
 
-		   // Initialisation Bootstrap
 		   const bootstrapModal = new bootstrap.Modal(modal);
 		   bootstrapModal.show();
 
-		   // Fonctionnalité : Modifier mot de passe avec card
-		   // Fonctionnalité : Suppression utilisateur (seulement si admin)
-		   if (isAdmin) {
+		   //  Suppression utilisateur
+		   if (isAdmin && !isSystemUser) {
 			   const btnSupprimerUser = modal.querySelector('#btn-supprimer-user');
 			   if (btnSupprimerUser) {
 				   btnSupprimerUser.addEventListener('click', () => {
-					   // Supprimer toute ancienne card de confirmation
 					   document.getElementById('confirm-delete-user-card')?.remove();
-					   // Supprimer la card d'information utilisateur (modale)
 					   const infoModal = document.getElementById('profilUtilisateurModal');
 					   if (infoModal) infoModal.remove();
 
@@ -142,14 +141,13 @@ export function afficherProfilUtilisateur(user) {
 					   // Annuler
 					   card.querySelector('#btn-cancel-delete-user').onclick = () => {
 						   card.remove();
-						   // Supprimer tout backdrop Bootstrap restant
 						   document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
 						   // Réafficher la modale d'information utilisateur
 						   afficherProfilUtilisateur(user);
 					   };
 					   // Confirmer
 					   card.querySelector('#btn-confirm-delete-user').onclick = async () => {
-						   const { deleteUser } = await import('../../API/users.js');
+						   const { deleteUser } = await import('../../API/users/users.js');
 						   const result = await deleteUser(user.id);
 						   card.remove();
 						   if (result && result.success) {
@@ -173,7 +171,6 @@ export function afficherProfilUtilisateur(user) {
 			   const formModifierMdp = cardModifierMdp.querySelector('#form-modifier-mdp');
 			   const inputNouveauMdp = cardModifierMdp.querySelector('#input-nouveau-mdp');
 			   const btnAnnulerMdp = cardModifierMdp.querySelector('#btn-annuler-mdp');
-			   // btnValiderMdp n'est plus utilisé directement, la soumission se fait via le formulaire
 
 			   const btnToggleNouveauMdp = cardModifierMdp.querySelector('#toggle-nouveau-mdp');
 			   const eyeNouveauMdp = cardModifierMdp.querySelector('#eye-nouveau-mdp');
@@ -199,7 +196,7 @@ export function afficherProfilUtilisateur(user) {
 					   e.preventDefault();
 					   const newPassword = inputNouveauMdp.value;
 					   if (newPassword && newPassword.trim().length > 0) {
-						   const { updateUserPassword } = await import('../../API/users.js');
+						   const { updateUserPassword } = await import('../../API/users/users.js');
 						   const result = await updateUserPassword(user.id, newPassword);
 						   if (result && result.success) {
 							   cardModifierMdp.classList.add('d-none');
