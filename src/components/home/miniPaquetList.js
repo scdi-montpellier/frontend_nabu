@@ -89,6 +89,7 @@ export async function renderMiniPaquetList(conteneurId, options) {
 		filtre,
 		htmlVide = '<div class="text-muted text-center">Aucun paquet.</div>',
 		classeCarte = 'card shadow-sm w-100 px-3 py-2 text-start',
+		renderItem,
 		ouvrirPaquet,
 		parPage = 4
 	} = options || {};
@@ -107,6 +108,10 @@ export async function renderMiniPaquetList(conteneurId, options) {
 	}
 	if (typeof ouvrirPaquet !== 'function') {
 		console.error('renderMiniPaquetList: option "ouvrirPaquet" doit être une fonction.');
+		return;
+	}
+	if (renderItem !== undefined && typeof renderItem !== 'function') {
+		console.error('renderMiniPaquetList: option "renderItem" doit être une fonction (ou être omise).');
 		return;
 	}
 
@@ -227,7 +232,32 @@ export async function renderMiniPaquetList(conteneurId, options) {
 			card.className = classeCarte;
 			card.setAttribute('role', 'button');
 			card.setAttribute('tabindex', '0');
-			card.textContent = paquet?.cote || '';
+
+			if (renderItem) {
+				const rendered = renderItem(paquet);
+				const title = typeof rendered === 'string' ? rendered : (rendered?.title ?? paquet?.cote ?? '');
+				const subtitle = typeof rendered === 'string' ? '' : (rendered?.subtitle ?? '');
+
+				const row = document.createElement('div');
+				row.className = 'd-flex justify-content-between align-items-start gap-2';
+
+				const left = document.createElement('div');
+				left.className = 'fw-semibold';
+				left.textContent = String(title || '');
+				row.appendChild(left);
+
+				if (subtitle) {
+					const right = document.createElement('div');
+					right.className = 'text-muted small text-nowrap';
+					right.textContent = String(subtitle);
+					row.appendChild(right);
+				}
+
+				card.appendChild(row);
+			} else {
+				card.textContent = paquet?.cote || '';
+			}
+
 			card.setAttribute('aria-label', `Ouvrir le paquet ${paquet?.cote || ''}`.trim());
 
 			const open = () => ouvrirPaquet(paquet);
