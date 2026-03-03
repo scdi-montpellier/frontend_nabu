@@ -230,6 +230,7 @@ export async function renderMiniPaquetList(conteneurId, options) {
 		pagePaquets.forEach((paquet) => {
 			const card = document.createElement('div');
 			card.className = classeCarte;
+			card.classList.add('overflow-hidden');
 			card.setAttribute('role', 'button');
 			card.setAttribute('tabindex', '0');
 
@@ -239,16 +240,17 @@ export async function renderMiniPaquetList(conteneurId, options) {
 				const subtitle = typeof rendered === 'string' ? '' : (rendered?.subtitle ?? '');
 
 				const row = document.createElement('div');
-				row.className = 'd-flex justify-content-between align-items-start gap-2';
+				row.className = 'd-flex justify-content-between align-items-start gap-2 w-100';
 
 				const left = document.createElement('div');
-				left.className = 'fw-semibold';
+				left.className = 'fw-semibold text-truncate flex-grow-1';
+				left.style.minWidth = '0';
 				left.textContent = String(title || '');
 				row.appendChild(left);
 
 				if (subtitle) {
 					const right = document.createElement('div');
-					right.className = 'text-muted small text-nowrap';
+					right.className = 'text-muted small text-nowrap flex-shrink-0';
 					right.textContent = String(subtitle);
 					row.appendChild(right);
 				}
