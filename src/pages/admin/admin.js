@@ -14,12 +14,6 @@ export default async function adminPage() {
 					<h1 class="h3 mb-1">Administration</h1>
 					<div class="text-body-secondary">Gestion des utilisateurs et des profils</div>
 				</div>
-				<nav aria-label="breadcrumb">
-					<ol class="breadcrumb mb-0">
-						<li class="breadcrumb-item"><a href="#/">Accueil</a></li>
-						<li class="breadcrumb-item active" aria-current="page">Admin</li>
-					</ol>
-				</nav>
 			</div>
 		</div>
 
