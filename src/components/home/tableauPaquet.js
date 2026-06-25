@@ -68,7 +68,8 @@ function escapeHtml(value) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+		.replace(/[\u2018\u2019]/g, "'");
+        // .replace(/'/g, '&#39;');
 }
 
 function safeTitleAttr(value) {
@@ -224,8 +225,8 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         const style = document.createElement('style');
         style.id = 'tableau-paquet-style';
         style.innerHTML = `
-            #tableau-paquet { border-collapse: separate; border-spacing: 0; table-layout: fixed; width: 100%; }
-            #tableau-paquet th, #tableau-paquet td { border: none; border-bottom: 1px solid var(--bs-border-color, #343A40); text-align: center !important; vertical-align: middle !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            #tableau-paquet { border-collapse: separate; border-spacing: 0; width: 100%; }
+            #tableau-paquet th, #tableau-paquet td { border: none; border-bottom: 1px solid var(--bs-border-color, #343A40); text-align: center !important; vertical-align: middle !important; overflow: auto; text-overflow: ellipsis; white-space: nowrap; }
             #tableau-paquet thead th { border-bottom: 2px solid var(--bs-border-color, #343A40); background-color: var(--bs-dark, #212529); color: #fff; }
             #tableau-paquet thead th#todo-filter-th { cursor: pointer; user-select: none; }
             #tableau-paquet td.folderName { max-width: 150px; }
@@ -281,8 +282,8 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             <table id="tableau-paquet" class="table table-striped table-hover align-middle" style="width:100%; min-width:700px;">
                 <thead>
                     <tr>
-                        <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Dossier</th>
                         <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Cote</th>
+						<th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Dossier</th>
                         <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Corpus</th>
                         <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Commentaire</th>
                         <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">SIP</th>
@@ -326,7 +327,8 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
 
     const scrollDiv = conteneur.querySelector('#tableau-paquet-scroll');
     const mq = window.matchMedia('(max-width: 991.98px)');
-    function setTableScroll(e) { scrollDiv.style.overflowX = e.matches ? 'auto' : 'unset'; }
+    // function setTableScroll(e) { scrollDiv.style.overflowX = e.matches ? 'auto' : 'unset'; }
+    function setTableScroll(e) { scrollDiv.style.overflowX = 'auto'; }
     setTableScroll(mq);
     mq.onchange = setTableScroll;
 
@@ -399,6 +401,7 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
 
     const $ = window.jQuery || window.$;
     const table = $('#tableau-paquet').DataTable({
+		
         data: filteredPaquets.map(p => ({
             ...p,
             lastmodifDateISO: (p.lastmodifDate || p.date) ? new Date(p.lastmodifDate || p.date).toISOString() : ''
@@ -410,24 +413,54 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             }
         },
         columns: [
-            { data: 'folderName', className: 'folderName', render: v => {
-                const safe = escapeHtml(v || '-');
-                const title = safeTitleAttr(v || '');
-                return `<span title="${title}">${safe}</span>`;
-            } },
-            { data: 'cote', render: v => v || '-' },
-            { data: 'corpusId', render: v => corpusDict[v] || '-' },
-            { data: 'commentaire', className: 'commentaire', render: v => {
-                const safe = escapeHtml(v || '-');
-                const title = safeTitleAttr(v || '');
-                return `<span title="${title}">${safe}</span>`;
-            } },
-            { data: 'filedSip', render: v => isToDoTruthy(v) ? '<span class="badge bg-primary">Oui</span>' : '<span class="badge bg-secondary">Non</span>' },
-            { data: 'statusId', render: (v) => {
+           
+            { data: 'cote', width: '100px', 
+				// render: v => v || '-' 
+				render: function(data, type, row) {
+					const safe = escapeHtml(data || '-');
+					if (type === 'display' && data.length > 20) {
+					  return '<span title="'+data+'">' + data.substring(0, 19) + '…' + '</span>';
+					}
+					return data;
+				  }
+			},
+			{ data: 'folderName',width: '100px', 
+			  className: 'folderName',
+				render: function(data, type, row) {
+					const safe = escapeHtml(data || '-');
+					if (type === 'display' && data.length > 15) {
+					  return '<span title="'+data+'">' + data.substring(0, 14) + '…' + '</span>';
+					}
+					return data;
+				  }
+			    // render: v => {
+                // const safe = escapeHtml(v || '-');
+                // const title = safeTitleAttr(v || '');
+                // return `<span title="${title}">${safe}</span>`;
+            // } 
+			},
+            { data: 'corpusId', width: '100px', render: v => corpusDict[v] || '-' },
+            { data: 'commentaire', width: '100px', className: 'commentaire', 
+			    render: function(data, type, row) {
+					const safe = escapeHtml(data || '-');
+					if (type === 'display' && safe.length > 15) {
+					  return '<span title="'+safe+'">' + safe.substring(0, 14) + '…' + '</span>';
+					  // return '<span title="'+safe+'">' + safe + '</span>';
+					}
+					return data;
+				  }
+				// render: v => {
+                // const safe = escapeHtml(v || '-');
+                // const title = safeTitleAttr(v || '');
+                // return `<span title="${title}">${safe}</span>`;
+				// } 
+			},
+            { data: 'filedSip', width: '50px', render: v => isToDoTruthy(v) ? '<span class="badge bg-primary">Oui</span>' : '<span class="badge bg-secondary">Non</span>' },
+            { data: 'statusId', width: '100px', render: (v) => {
                 const status = statusById.get(String(v)) ?? statusById.get('1') ?? null;
                 return renderStatusBadge(status);
             } },
-            { data: 'toDo', render: (v, type) => {
+            { data: 'toDo', width: '50px',render: (v, type) => {
                 // Rendu orthogonal DataTables : pour le tri, on renvoie 1/0.
                 if (type === 'sort' || type === 'type') {
                     return isToDoTruthy(v) ? 1 : 0;
@@ -440,10 +473,12 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         columnDefs: [
             { targets: 6, orderable: true }
         ],
+		
+		autoWidth: false,
 
         deferRender: true,
 
-        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Tous"]],
+        lengthMenu: [[10, 25, 50, 100, 500, -1], [10, 25, 50, 100, 500, "Tous"]],
         order: initialOrder,
         search: { search: initialSearch },
         ...(initialPageLength !== undefined ? { pageLength: initialPageLength } : {}),

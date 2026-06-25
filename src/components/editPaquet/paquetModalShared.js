@@ -33,8 +33,14 @@ export function applySipRule(formEl) {
 
 	const nonEnvoyeValue = getStatusValueByNormalizedLabel(statusSelectEl, 'NON_ENVOYE');
 	if (!nonEnvoyeValue) return;
-
-	if (sipCheckbox.checked) {
+	
+	const InexistantValue = getStatusValueByNormalizedLabel(statusSelectEl, 'INEXISTANT');
+	// if (envoiOKValue==3) return;
+		// alert("Attention : cocher 'Déposé dans SIP...' met le statut en NON_ENVOYE " + statusSelectEl.value);
+	
+	if (sipCheckbox.checked && statusSelectEl.value == InexistantValue) {
+		
+		
 		if (!statusSelectEl.dataset.prevValue) {
 			statusSelectEl.dataset.prevValue = statusSelectEl.value || '';
 		}
@@ -217,21 +223,21 @@ export function openPaquetModal({
 		<div class="container-fluid">
 			<div class="row g-3">
 				<div class="col-md-6">
-					<label class="form-label">Nom dossier <span class="text-danger">*</span> :</label>
-					<input type="text" class="form-control" name="folderName" required value="${safe.folderName}">
-				</div>
-				<div class="col-md-6">
-					<label class="form-label">Répertoire des images autre :</label>
-					<input type="text" class="form-control" name="microFilmImage" value="${safe.microFilmImage}">
-				</div>
-				<div class="col-md-6">
-					<label class="form-label">Cote <span class="text-danger">*</span> :</label>
+					<label class="form-label">Cote du paquet <span class="text-danger">*</span> :</label>
 					<input type="text" class="form-control" name="cote" required value="${safe.cote}">
 					${values.includeOldCote ? `<input type="hidden" name="oldCote" value="${safe.oldCote || safe.cote}">` : ''}
 				</div>
 				<div class="col-md-6">
+					<label class="form-label">Dossier sur Prodnum/Définitif <span class="text-danger">*</span> :</label>
+					<input type="text" class="form-control" name="folderName" required value="${safe.folderName}">
+				</div>
+				<div class="col-md-6">
 					<label class="form-label">Répertoire des images couleurs :</label>
 					<input type="text" class="form-control" name="imageColor" value="${safe.imageColor}">
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">Répertoire des images autre :</label>
+					<input type="text" class="form-control" name="microFilmImage" value="${safe.microFilmImage}">
 				</div>
 				<div class="col-md-6">
 					<label class="form-label">Corpus :</label>
@@ -252,15 +258,15 @@ export function openPaquetModal({
 				<div class="col-md-12 paquet-modal-flags d-flex align-items-center gap-4 mt-2 mb-2 justify-content-center flex-wrap">
 					<div class="form-check">
 						<input class="form-check-input" type="checkbox" name="toDo" id="paquetToDo" ${safe.toDoChecked}>
-						<label class="form-check-label" for="paquetToDo">A faire :</label>
+						<label class="form-check-label" for="paquetToDo">A faire</label>
 					</div>
 					<div class="form-check">
 						<input class="form-check-input" type="checkbox" name="facileTest" id="paquetFacileTest" ${safe.facileTestChecked}>
-						<label class="form-check-label" for="paquetFacileTest">Multi volume :</label>
+						<label class="form-check-label" for="paquetFacileTest">Multi-volume</label>
 					</div>
 					<div class="form-check">
 						<input class="form-check-input" type="checkbox" name="filedSip" id="paquetFiledSip" ${safe.filedSipChecked}>
-						<label class="form-check-label" for="paquetFiledSip">Déposé dans SIP en prod num :</label>
+						<label class="form-check-label" for="paquetFiledSip">Déposé dans SIP_en_attente sur prodnum</label>
 					</div>
 				</div>
 				<div class="col-md-12">

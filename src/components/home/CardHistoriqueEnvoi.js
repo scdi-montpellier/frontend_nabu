@@ -125,7 +125,7 @@ export async function afficherCardHistoriqueEnvoi(paquetCote) {
     content.className = 'modal-content';
     content.innerHTML = `
         <div class="modal-header">
-            <h5 class="modal-title fw-bold w-100 text-center">Historique d'envoi</h5>
+            <h5 class="modal-title fw-bold w-100 text-center">Historique d'envoi au CINES</h5>
             <button class="btn-close" aria-label="Fermer"></button>
         </div>
         <div class="modal-body"></div>
@@ -177,10 +177,10 @@ export async function afficherCardHistoriqueEnvoi(paquetCote) {
     thead.className = 'table-dark';
     thead.innerHTML = `
         <tr>
-            <th class="text-center">items_id</th>
-            <th class="text-center">paquet_cote</th>
-            <th class="text-center">date_envoi</th>
-            <th class="text-center">validation CINES</th>
+            <th class="text-center">ItemID Vitam</th>
+            <th class="text-center">Cote du paquet</th>
+            <th class="text-center">Date d'envoi</th>
+            <th class="text-center">Validation CINES</th>
         </tr>
     `;
 

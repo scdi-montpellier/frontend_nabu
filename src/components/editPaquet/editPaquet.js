@@ -47,7 +47,7 @@ export function afficherCardPaquetEditModal(paquet) {
 			const statusSelectorWrapper = await createStatusSelector({
 				name: 'statusId',
 				value: paquet.statusId || paquet.status_id || '',
-				allowedLabels: ['INEXISTANT', 'NON_ENVOYE'],
+				allowedLabels: ['INEXISTANT', 'NON_ENVOYE', 'ENVOI_EN_ERREUR', 'ENVOI_OK'],
 			});
 			statusContainer.appendChild(statusSelectorWrapper);
 

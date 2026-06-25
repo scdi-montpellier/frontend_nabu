@@ -162,9 +162,9 @@ export async function createCardPaquet(paquet) {
 		<div class="card-header bg-white border-0 pb-0">
 			<div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
 				<div class="flex-grow-1">
-					<div class="text-muted small">Paquet</div>
+					<div class="text-muted small">Cote du paquet :</div>
 					<div class="h5 mb-1 fw-bold">${cote}</div>
-					<div class="text-muted small">Dossier : <span class="fw-semibold text-body">${dossier}</span></div>
+					<div class="text-muted small">Dossier sur Prodnum/Définitif : <span class="fw-semibold text-body">${dossier}</span></div>
 				</div>
 				<div class="text-end">${renderStatusBadge(status)}</div>
 			</div>
@@ -177,11 +177,11 @@ export async function createCardPaquet(paquet) {
 					<div class="border rounded p-3 h-100 bg-light">
 						<div class="fw-bold mb-2">Métadonnées</div>
 						<div class="d-flex justify-content-between gap-3">
-							<span class="text-muted">Corpus</span>
+							<span class="text-muted">Corpus :</span>
 							<span class="fw-semibold text-end">${corpusName || '—'}</span>
 						</div>
 						<div class="d-flex justify-content-between gap-3 mt-2">
-							<span class="text-muted">Recherche archivage</span>
+							<span class="text-muted">Recherche archivage :</span>
 							<span class="fw-semibold text-end">${searchArchiving}</span>
 						</div>
 					</div>
@@ -189,14 +189,14 @@ export async function createCardPaquet(paquet) {
 
 				<div class="col-12 col-lg-6">
 					<div class="border rounded p-3 h-100 bg-light">
-						<div class="fw-bold mb-2">Chemins</div>
+						<div class="fw-bold mb-2">Chemins des images</div>
 						<div class="mb-2">
-							<div class="text-muted small">Répertoire images autre</div>
-							<div class="fw-semibold text-break">${microFilmImage}</div>
+							<div class="text-muted small">Répertoire images couleurs :</div>
+							<div class="fw-semibold text-break">${imageColor}</div>
 						</div>
 						<div>
-							<div class="text-muted small">Répertoire images couleurs</div>
-							<div class="fw-semibold text-break">${imageColor}</div>
+							<div class="text-muted small">Répertoire images autre :</div>
+							<div class="fw-semibold text-break">${microFilmImage}</div>
 						</div>
 					</div>
 				</div>
@@ -209,15 +209,15 @@ export async function createCardPaquet(paquet) {
 							<div class="d-flex gap-4 flex-wrap">
 								<div class="text-center">
 									<div class="text-muted small">À faire</div>
-									<span class="badge bg-${isFlagTruthy(paquet?.toDo) ? 'success' : 'secondary'}">${isFlagTruthy(paquet?.toDo) ? 'Oui' : 'Non'}</span>
+									<span class="badge bg-${isFlagTruthy(paquet?.toDo) ? 'primary' : 'secondary'}">${isFlagTruthy(paquet?.toDo) ? 'Oui' : 'Non'}</span>
 								</div>
 								<div class="text-center">
 									<div class="text-muted small">Multi-volume</div>
-									<span class="badge bg-${isFlagTruthy(paquet?.facileTest) ? 'success' : 'secondary'}">${isFlagTruthy(paquet?.facileTest) ? 'Oui' : 'Non'}</span>
+									<span class="badge bg-${isFlagTruthy(paquet?.facileTest) ? 'primary' : 'secondary'}">${isFlagTruthy(paquet?.facileTest) ? 'Oui' : 'Non'}</span>
 								</div>
 								<div class="text-center">
-									<div class="text-muted small">SIP</div>
-									<span class="badge bg-${isFlagTruthy(paquet?.filedSip) ? 'success' : 'secondary'}">${isFlagTruthy(paquet?.filedSip) ? 'Oui' : 'Non'}</span>
+									<div class="text-muted small">SIP dans Prodnum</div>
+									<span class="badge bg-${isFlagTruthy(paquet?.filedSip) ? 'primary' : 'secondary'}">${isFlagTruthy(paquet?.filedSip) ? 'Oui' : 'Non'}</span>
 								</div>
 							</div>
 							<div class="text-muted small text-end">
